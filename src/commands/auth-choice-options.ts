@@ -88,6 +88,12 @@ const AUTH_CHOICE_GROUP_DEFS: {
     choices: ["qianfan-api-key"],
   },
   {
+    value: "deepseek",
+    label: "DeepSeek",
+    hint: "DeepSeek-V3 & R1",
+    choices: ["deepseek-api-key"],
+  },
+  {
     value: "copilot",
     label: "Copilot",
     hint: "GitHub + local proxy",
@@ -183,6 +189,10 @@ export function buildAuthChoiceOptions(params: {
   options.push({
     value: "qianfan-api-key",
     label: "Qianfan API key",
+  });
+  options.push({
+    value: "deepseek-api-key",
+    label: "DeepSeek API key",
   });
   options.push({ value: "openrouter-api-key", label: "OpenRouter API key" });
   options.push({

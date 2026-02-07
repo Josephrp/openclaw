@@ -44,6 +44,7 @@ export type AuthChoice =
   | "copilot-proxy"
   | "qwen-portal"
   | "xai-api-key"
+  | "deepseek-api-key"
   | "qianfan-api-key"
   | "custom-api-key"
   | "skip";
@@ -67,6 +68,7 @@ export type AuthChoiceGroupId =
   | "qwen"
   | "together"
   | "huggingface"
+  | "deepseek"
   | "qianfan"
   | "xai"
   | "custom";
@@ -117,6 +119,7 @@ export type OnboardOptions = {
   huggingfaceApiKey?: string;
   opencodeZenApiKey?: string;
   xaiApiKey?: string;
+  deepseekApiKey?: string;
   qianfanApiKey?: string;
   customBaseUrl?: string;
   customApiKey?: string;
