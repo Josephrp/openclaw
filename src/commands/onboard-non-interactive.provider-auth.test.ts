@@ -346,7 +346,7 @@ describe("onboard (non-interactive): provider auth", () => {
 
       expect(cfg.auth?.profiles?.["together:default"]?.provider).toBe("together");
       expect(cfg.auth?.profiles?.["together:default"]?.mode).toBe("api_key");
-      expect(cfg.agents?.defaults?.model?.primary).toBe("together/zai-org/GLM-4.7");
+      expect(cfg.agents?.defaults?.model?.primary).toBe("together/moonshotai/Kimi-K2.5");
       await expectApiKeyProfile({
         profileId: "together:default",
         provider: "together",
