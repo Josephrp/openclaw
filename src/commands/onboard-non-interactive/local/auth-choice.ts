@@ -623,6 +623,8 @@ export async function applyNonInteractiveAuthChoice(params: {
       mode: "api_key",
     });
     return applyHuggingfaceConfig(nextConfig);
+  }
+
   if (authChoice === "custom-api-key") {
     try {
       const customAuth = parseNonInteractiveCustomApiFlags({
