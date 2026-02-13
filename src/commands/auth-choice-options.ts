@@ -8,7 +8,6 @@ export type AuthChoiceOption = {
   label: string;
   hint?: string;
 };
-
 export type AuthChoiceGroup = {
   value: AuthChoiceGroupId;
   label: string;
@@ -33,6 +32,12 @@ const AUTH_CHOICE_GROUP_DEFS: {
     label: "Anthropic",
     hint: "setup-token + API key",
     choices: ["token", "apiKey"],
+  },
+  {
+    value: "vllm",
+    label: "vLLM",
+    hint: "Local/self-hosted OpenAI-compatible",
+    choices: ["vllm"],
   },
   {
     value: "minimax",
@@ -168,6 +173,11 @@ export function buildAuthChoiceOptions(params: {
     label: "OpenAI Codex (ChatGPT OAuth)",
   });
   options.push({ value: "chutes", label: "Chutes (OAuth)" });
+  options.push({
+    value: "vllm",
+    label: "vLLM (custom URL + model)",
+    hint: "Local/self-hosted OpenAI-compatible server",
+  });
   options.push({ value: "openai-api-key", label: "OpenAI API key" });
   options.push({ value: "xai-api-key", label: "xAI (Grok) API key" });
   options.push({

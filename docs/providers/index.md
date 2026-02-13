@@ -53,6 +53,7 @@ See [Venice AI](/providers/venice).
 - [Venice (Venice AI, privacy-focused)](/providers/venice)
 - [Hugging Face (Inference)](/providers/huggingface)
 - [Ollama (local models)](/providers/ollama)
+- [vLLM (local models)](/providers/vllm)
 - [Qianfan](/providers/qianfan)
 
 ## Transcription providers
