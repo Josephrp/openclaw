@@ -30,7 +30,7 @@ ENV NODE_ENV=production
 # Spaces expose a single port (default 7860); gateway must listen on 0.0.0.0
 EXPOSE 7860
 
-# Entrypoint: use /data if writable (persistent storage), else /home/user so we don't get EACCES
+# Entrypoint: set OPENCLAW_HOME, run HF Spaces setup (default model + token from secrets), then start gateway
 RUN printf '%s\n' \
     '#!/bin/sh' \
     'set -e' \
@@ -40,6 +40,7 @@ RUN printf '%s\n' \
     '  export OPENCLAW_HOME=/home/user' \
     '  mkdir -p /home/user/.openclaw' \
     'fi' \
+    'node /app/spaces/huggingface/setup-hf-config.mjs' \
     'exec node /app/openclaw.mjs gateway --allow-unconfigured --bind lan --port 7860 "$@"' \
     > /app/entrypoint.sh \
     && chmod +x /app/entrypoint.sh

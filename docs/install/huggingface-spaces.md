@@ -24,10 +24,12 @@ Run the OpenClaw gateway as a [Hugging Face Space](https://huggingface.co/docs/h
    - [spaces/huggingface/README.md](https://github.com/openclaw/openclaw/blob/main/spaces/huggingface/README.md) (use as your Space README; it includes the required YAML front matter)
    - [spaces/huggingface/Dockerfile](https://github.com/openclaw/openclaw/blob/main/spaces/huggingface/Dockerfile)
 
-3. In your Space **Settings → Secrets**, add:
-   - `OPENCLAW_GATEWAY_TOKEN` — a long random string (e.g. `openssl rand -hex 24`). You will paste this into the Control UI to log in.
+3. In your Space **Settings → Secrets**, add (all optional except the gateway token for UI access):
+   - **`OPENCLAW_GATEWAY_TOKEN`** — long random string (e.g. `openssl rand -hex 24`). You will paste this into the Control UI to log in. **Recommended.**
+   - **`HF_TOKEN`** — your [Hugging Face token](https://huggingface.co/settings/tokens) with **Make calls to Inference Providers**. The gateway uses this as the default model provider; without it, chat will fail until you configure another provider.
+   - **`OPENCLAW_HF_DEFAULT_MODEL`** — (optional) Default model ref (e.g. `huggingface/deepseek-ai/DeepSeek-R1` or `huggingface/Qwen/Qwen3-8B`). Defaults to `huggingface/deepseek-ai/DeepSeek-R1` if unset.
 
-4. Push to the Space; it will build and start. Open the Space URL and enter the token in **Settings → token** in the Control UI.
+4. Push to the Space; it will build and start. At startup, a setup script writes config so the default model is Hugging Face Inference (from the secrets above). When the logs show **`listening on ws://0.0.0.0:7860`**, open the Space URL and enter the gateway token in **Settings → token** in the Control UI.
 
 ## Keep it running
 
@@ -43,8 +45,18 @@ By default, Space disk is ephemeral. To keep config and sessions across restarts
 
 ## Troubleshooting
 
+- **Container "stuck" at "listening on ws://0.0.0.0:7860"** — The app is running. Open the Space URL in your browser (e.g. the "App" link); the Control UI is served on the same port. If the Space UI still shows "Building" or "Starting", wait a few seconds or refresh.
 - **"EACCES: permission denied, mkdir '/data'"** — Fixed in the image: the entrypoint uses `/home/user` when `/data` is not writable. If you added persistent storage and still see this, the Space may need a rebuild so the entrypoint runs again.
 - **"Gateway already running" / "Port 7860 is already in use"** — Often caused by Hugging Face or Dev Mode restarting the app while the previous process is still running. Restart the Space once from the UI, or disable **Dev mode** in Settings if you don't need it.
+
+## Hugging Face Inference as default
+
+The image runs a small setup script at startup that writes `openclaw.json` so that:
+
+- The default model is **Hugging Face Inference** (model ref from `OPENCLAW_HF_DEFAULT_MODEL` or `huggingface/deepseek-ai/DeepSeek-R1`).
+- Gateway token auth is set from `OPENCLAW_GATEWAY_TOKEN` if provided.
+
+The gateway reads **`HF_TOKEN`** from the environment (set it in Space Secrets) to call the [Inference API](https://huggingface.co/docs/inference-providers). No need to run onboarding inside the container.
 
 ## Optional: custom repo or branch
 
