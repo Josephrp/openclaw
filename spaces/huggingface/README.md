@@ -33,7 +33,7 @@ When the Space is running, open your Space’s URL (e.g. `https://your-username-
 Without persistent storage, config and workspace are lost when the Space restarts. To keep them:
 
 1. In **Settings → Storage**, add **persistent storage** for the Space.
-2. The Dockerfile already sets `OPENCLAW_HOME=/data`, so the gateway stores config and workspace under `/data/.openclaw`, which is persisted.
+2. The container uses `/data` when writable (state under `/data/.openclaw`). If `/data` is not available, it falls back to `/home/user/.openclaw` so the app still starts.
 
 ## Optional Space variables (build args)
 

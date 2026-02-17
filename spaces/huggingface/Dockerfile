@@ -27,11 +27,22 @@ RUN pnpm ui:build
 
 ENV NODE_ENV=production
 
-# Hugging Face Spaces: persist config/workspace under /data (only available at runtime)
-ENV OPENCLAW_HOME=/data
-
 # Spaces expose a single port (default 7860); gateway must listen on 0.0.0.0
 EXPOSE 7860
+
+# Entrypoint: use /data if writable (persistent storage), else /home/user so we don't get EACCES
+RUN printf '%s\n' \
+    '#!/bin/sh' \
+    'set -e' \
+    'if mkdir -p /data/.openclaw 2>/dev/null; then' \
+    '  export OPENCLAW_HOME=/data' \
+    'else' \
+    '  export OPENCLAW_HOME=/home/user' \
+    '  mkdir -p /home/user/.openclaw' \
+    'fi' \
+    'exec node /app/openclaw.mjs gateway --allow-unconfigured --bind lan --port 7860 "$@"' \
+    > /app/entrypoint.sh \
+    && chmod +x /app/entrypoint.sh
 
 # HF Spaces Dev Mode injects steps that expect /home/user; create it so they don't fail with "Permission denied"
 RUN chown -R node:node /app \
@@ -40,4 +51,4 @@ RUN chown -R node:node /app \
 USER node
 
 # Token/password: set OPENCLAW_GATEWAY_TOKEN or OPENCLAW_GATEWAY_PASSWORD in Space Secrets
-CMD ["node", "openclaw.mjs", "gateway", "--allow-unconfigured", "--bind", "lan", "--port", "7860"]
+ENTRYPOINT ["/app/entrypoint.sh"]

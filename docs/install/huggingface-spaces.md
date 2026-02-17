@@ -39,7 +39,12 @@ Run the OpenClaw gateway as a [Hugging Face Space](https://huggingface.co/docs/h
 By default, Space disk is ephemeral. To keep config and sessions across restarts:
 
 1. In **Settings → Storage**, add persistent storage for the Space.
-2. The provided Dockerfile sets `OPENCLAW_HOME=/data`, so the gateway stores everything under `/data/.openclaw`, which is persisted. No extra config needed.
+2. The container entrypoint uses `/data` when it is writable (e.g. with persistent storage), so the gateway stores everything under `/data/.openclaw`. If `/data` is not available or not writable, it falls back to `/home/user/.openclaw` so the app still starts without permission errors.
+
+## Troubleshooting
+
+- **"EACCES: permission denied, mkdir '/data'"** — Fixed in the image: the entrypoint uses `/home/user` when `/data` is not writable. If you added persistent storage and still see this, the Space may need a rebuild so the entrypoint runs again.
+- **"Gateway already running" / "Port 7860 is already in use"** — Often caused by Hugging Face or Dev Mode restarting the app while the previous process is still running. Restart the Space once from the UI, or disable **Dev mode** in Settings if you don't need it.
 
 ## Optional: custom repo or branch
 
