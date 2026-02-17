@@ -63,7 +63,7 @@ It writes config/workspace on the host:
 - `~/.openclaw/`
 - `~/.openclaw/workspace`
 
-Running on a VPS? See [Hetzner (Docker VPS)](/install/hetzner).
+Running on a VPS? See [Hetzner (Docker VPS)](/install/hetzner). Running on [Hugging Face Spaces](/install/huggingface-spaces)? Use the files in `spaces/huggingface/`.
 
 ### Manual flow (compose)
 
