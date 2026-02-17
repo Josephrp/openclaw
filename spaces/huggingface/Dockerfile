@@ -33,7 +33,10 @@ ENV OPENCLAW_HOME=/data
 # Spaces expose a single port (default 7860); gateway must listen on 0.0.0.0
 EXPOSE 7860
 
-RUN chown -R node:node /app
+# HF Spaces Dev Mode injects steps that expect /home/user; create it so they don't fail with "Permission denied"
+RUN chown -R node:node /app \
+    && mkdir -p /home/user \
+    && chown -R node:node /home/user
 USER node
 
 # Token/password: set OPENCLAW_GATEWAY_TOKEN or OPENCLAW_GATEWAY_PASSWORD in Space Secrets
