@@ -168,7 +168,12 @@ async function promptWhatsAppAllowFrom(
   let next = setWhatsAppSelfChatMode(cfg, false);
   next = setWhatsAppDmPolicy(next, policy);
   if (policy === "open") {
-    next = setWhatsAppAllowFrom(next, ["*"]);
+    const openAllowFrom = mergeAllowFromEntries(undefined, [
+      "*",
+      ...existingAllowFrom.filter((e) => e !== "*"),
+    ]);
+    next = setWhatsAppAllowFrom(next, openAllowFrom);
+    return next;
   }
   if (policy === "disabled") {
     return next;
