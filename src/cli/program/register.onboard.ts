@@ -107,7 +107,6 @@ export function registerOnboardCommand(program: Command) {
     .option("--skip-skills", "Skip skills setup")
     .option("--skip-health", "Skip health check")
     .option("--skip-ui", "Skip Control UI/TUI prompts")
-    .option("--node-manager <name>", "Node manager for skills: npm|pnpm|bun")
     .option("--json", "Output JSON summary", false);
 
   command.action(async (opts, commandRuntime) => {
@@ -150,6 +149,8 @@ export function registerOnboardCommand(program: Command) {
           opencodeZenApiKey: opts.opencodeZenApiKey as string | undefined,
           xaiApiKey: opts.xaiApiKey as string | undefined,
           litellmApiKey: opts.litellmApiKey as string | undefined,
+          volcengineApiKey: opts.volcengineApiKey as string | undefined,
+          byteplusApiKey: opts.byteplusApiKey as string | undefined,
           customBaseUrl: opts.customBaseUrl as string | undefined,
           customApiKey: opts.customApiKey as string | undefined,
           customModelId: opts.customModelId as string | undefined,

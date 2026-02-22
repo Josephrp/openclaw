@@ -1,4 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
+import { logVerbose } from "../../globals.js";
+import { sleep } from "../../utils.js";
+import { loadWebMedia } from "../media.js";
 import { deliverWebReply } from "./deliver-reply.js";
 import type { WebInboundMsg } from "./types.js";
 
@@ -22,10 +25,6 @@ vi.mock("../../utils.js", async (importOriginal) => {
     sleep: vi.fn(async () => {}),
   };
 });
-
-const { loadWebMedia } = await import("../media.js");
-const { sleep } = await import("../../utils.js");
-const { logVerbose } = await import("../../globals.js");
 
 function makeMsg(): WebInboundMsg {
   return {
@@ -81,6 +80,28 @@ describe("deliverWebReply", () => {
     const msg = makeMsg();
     (msg.reply as unknown as { mockRejectedValueOnce: (v: unknown) => void }).mockRejectedValueOnce(
       new Error("connection closed"),
+    );
+    (msg.reply as unknown as { mockResolvedValueOnce: (v: unknown) => void }).mockResolvedValueOnce(
+      undefined,
+    );
+
+    await deliverWebReply({
+      replyResult: { text: "hi" },
+      msg,
+      maxMediaBytes: 1024 * 1024,
+      textLimit: 200,
+      replyLogger,
+      skipLog: true,
+    });
+
+    expect(msg.reply).toHaveBeenCalledTimes(2);
+    expect(sleep).toHaveBeenCalledWith(500);
+  });
+
+  it("retries text send when error contains timed out", async () => {
+    const msg = makeMsg();
+    (msg.reply as unknown as { mockRejectedValueOnce: (v: unknown) => void }).mockRejectedValueOnce(
+      new Error("operation timed out"),
     );
     (msg.reply as unknown as { mockResolvedValueOnce: (v: unknown) => void }).mockResolvedValueOnce(
       undefined,

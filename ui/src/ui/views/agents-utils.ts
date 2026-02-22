@@ -3,7 +3,7 @@ import {
   expandToolGroups,
   normalizeToolName,
   resolveToolProfilePolicy,
-} from "../../../../src/agents/tool-policy.js";
+} from "../../../../src/agents/tool-policy-shared.js";
 import type { AgentIdentityResult, AgentsFilesListResult, AgentsListResult } from "../types.ts";
 
 export const TOOL_SECTIONS = [
@@ -187,6 +187,14 @@ export function resolveAgentEmoji(
 
 export function agentBadgeText(agentId: string, defaultId: string | null) {
   return defaultId && agentId === defaultId ? "default" : null;
+}
+
+export function agentAvatarHue(id: string): number {
+  let hash = 0;
+  for (let i = 0; i < id.length; i += 1) {
+    hash = (hash * 31 + id.charCodeAt(i)) | 0;
+  }
+  return ((hash % 360) + 360) % 360;
 }
 
 export function formatBytes(bytes?: number) {

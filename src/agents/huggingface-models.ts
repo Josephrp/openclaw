@@ -1,4 +1,7 @@
 import type { ModelDefinitionConfig } from "../config/types.models.js";
+import { createSubsystemLogger } from "../logging/subsystem.js";
+
+const log = createSubsystemLogger("huggingface-models");
 
 /** Hugging Face Inference Providers (router) — OpenAI-compatible chat completions. */
 export const HUGGINGFACE_BASE_URL = "https://router.huggingface.co/v1";
@@ -13,6 +16,23 @@ export const HUGGINGFACE_POLICY_SUFFIXES = ["cheapest", "fastest"] as const;
 export function isHuggingfacePolicyLocked(modelRef: string): boolean {
   const ref = String(modelRef).trim();
   return HUGGINGFACE_POLICY_SUFFIXES.some((s) => ref.endsWith(`:${s}`) || ref === s);
+}
+
+/**
+ * Model id safe for the Hugging Face Inference API (router.huggingface.co).
+ * Per HF docs, the API expects Hub-style model ids (e.g. deepseek-ai/DeepSeek-R1) with
+ * optional routing suffixes (:cheapest, :fastest, or :provider). The "huggingface/" prefix
+ * is OpenClaw-internal and must not be sent to the HF client.
+ * Returns the same string with a leading "huggingface/" stripped; other tags are preserved.
+ */
+export function modelIdForHfInferenceClient(modelRefOrId: string): string {
+  const s = String(modelRefOrId).trim();
+  const prefix = "huggingface/";
+  const lowerS = s.toLowerCase();
+  if (lowerS.startsWith(prefix)) {
+    return s.slice(lowerS.indexOf(prefix) + prefix.length).trim() || s;
+  }
+  return s;
 }
 
 /** Default cost when not in static catalog (HF pricing varies by provider). */
@@ -168,16 +188,14 @@ export async function discoverHuggingfaceModels(apiKey: string): Promise<ModelDe
     });
 
     if (!response.ok) {
-      console.warn(
-        `[huggingface-models] GET /v1/models failed: HTTP ${response.status}, using static catalog`,
-      );
+      log.warn(`GET /v1/models failed: HTTP ${response.status}, using static catalog`);
       return HUGGINGFACE_MODEL_CATALOG.map(buildHuggingfaceModelDefinition);
     }
 
     const body = (await response.json()) as OpenAIListModelsResponse;
     const data = body?.data;
     if (!Array.isArray(data) || data.length === 0) {
-      console.warn("[huggingface-models] No models in response, using static catalog");
+      log.warn("No models in response, using static catalog");
       return HUGGINGFACE_MODEL_CATALOG.map(buildHuggingfaceModelDefinition);
     }
 
@@ -223,7 +241,7 @@ export async function discoverHuggingfaceModels(apiKey: string): Promise<ModelDe
       ? models
       : HUGGINGFACE_MODEL_CATALOG.map(buildHuggingfaceModelDefinition);
   } catch (error) {
-    console.warn(`[huggingface-models] Discovery failed: ${String(error)}, using static catalog`);
+    log.warn(`Discovery failed: ${String(error)}, using static catalog`);
     return HUGGINGFACE_MODEL_CATALOG.map(buildHuggingfaceModelDefinition);
   }
 }

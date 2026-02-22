@@ -11,11 +11,13 @@ import {
   minSecurity,
   recordAllowlistUse,
   requiresExecApproval,
+  resolveAllowAlwaysPatterns,
   resolveExecApprovals,
 } from "../infra/exec-approvals.js";
+import type { SafeBinProfile } from "../infra/exec-safe-bin-policy.js";
 import { markBackgrounded, tail } from "./bash-process-registry.js";
+import { requestExecApprovalDecision } from "./bash-tools.exec-approval-request.js";
 import {
-  DEFAULT_APPROVAL_REQUEST_TIMEOUT_MS,
   DEFAULT_APPROVAL_TIMEOUT_MS,
   DEFAULT_NOTIFY_TAIL_CHARS,
   createApprovalSlug,
@@ -24,7 +26,6 @@ import {
   runExecProcess,
 } from "./bash-tools.exec-runtime.js";
 import type { ExecToolDetails } from "./bash-tools.exec-types.js";
-import { callGatewayTool } from "./tools/gateway.js";
 
 export type ProcessGatewayAllowlistParams = {
   command: string;
@@ -36,6 +37,7 @@ export type ProcessGatewayAllowlistParams = {
   security: ExecSecurity;
   ask: ExecAsk;
   safeBins: Set<string>;
+  safeBinProfiles: Readonly<Record<string, SafeBinProfile>>;
   agentId?: string;
   sessionKey?: string;
   scopeKey?: string;
@@ -69,6 +71,7 @@ export async function processGatewayAllowlist(
     command: params.command,
     allowlist: approvals.allowlist,
     safeBins: params.safeBins,
+    safeBinProfiles: params.safeBinProfiles,
     cwd: params.workdir,
     env: params.env,
     platform: process.platform,
@@ -78,12 +81,23 @@ export async function processGatewayAllowlist(
   const analysisOk = allowlistEval.analysisOk;
   const allowlistSatisfied =
     hostSecurity === "allowlist" && analysisOk ? allowlistEval.allowlistSatisfied : false;
-  const requiresAsk = requiresExecApproval({
-    ask: hostAsk,
-    security: hostSecurity,
-    analysisOk,
-    allowlistSatisfied,
-  });
+  const hasHeredocSegment = allowlistEval.segments.some((segment) =>
+    segment.argv.some((token) => token.startsWith("<<")),
+  );
+  const requiresHeredocApproval =
+    hostSecurity === "allowlist" && analysisOk && allowlistSatisfied && hasHeredocSegment;
+  const requiresAsk =
+    requiresExecApproval({
+      ask: hostAsk,
+      security: hostSecurity,
+      analysisOk,
+      allowlistSatisfied,
+    }) || requiresHeredocApproval;
+  if (requiresHeredocApproval) {
+    params.warnings.push(
+      "Warning: heredoc execution requires explicit approval in allowlist mode.",
+    );
+  }
 
   if (requiresAsk) {
     const approvalId = crypto.randomUUID();
@@ -99,27 +113,17 @@ export async function processGatewayAllowlist(
     void (async () => {
       let decision: string | null = null;
       try {
-        const decisionResult = await callGatewayTool<{ decision: string }>(
-          "exec.approval.request",
-          { timeoutMs: DEFAULT_APPROVAL_REQUEST_TIMEOUT_MS },
-          {
-            id: approvalId,
-            command: params.command,
-            cwd: params.workdir,
-            host: "gateway",
-            security: hostSecurity,
-            ask: hostAsk,
-            agentId: params.agentId,
-            resolvedPath,
-            sessionKey: params.sessionKey,
-            timeoutMs: DEFAULT_APPROVAL_TIMEOUT_MS,
-          },
-        );
-        const decisionValue =
-          decisionResult && typeof decisionResult === "object"
-            ? (decisionResult as { decision?: unknown }).decision
-            : undefined;
-        decision = typeof decisionValue === "string" ? decisionValue : null;
+        decision = await requestExecApprovalDecision({
+          id: approvalId,
+          command: params.command,
+          cwd: params.workdir,
+          host: "gateway",
+          security: hostSecurity,
+          ask: hostAsk,
+          agentId: params.agentId,
+          resolvedPath,
+          sessionKey: params.sessionKey,
+        });
       } catch {
         emitExecSystemEvent(
           `Exec denied (gateway id=${approvalId}, approval-request-failed): ${params.command}`,
@@ -153,8 +157,13 @@ export async function processGatewayAllowlist(
       } else if (decision === "allow-always") {
         approvedByAsk = true;
         if (hostSecurity === "allowlist") {
-          for (const segment of allowlistEval.segments) {
-            const pattern = segment.resolution?.resolvedPath ?? "";
+          const patterns = resolveAllowAlwaysPatterns({
+            segments: allowlistEval.segments,
+            cwd: params.workdir,
+            env: params.env,
+            platform: process.platform,
+          });
+          for (const pattern of patterns) {
             if (pattern) {
               addAllowlistEntry(approvals.file, params.agentId, pattern);
             }
