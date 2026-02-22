@@ -3,7 +3,7 @@ import {
   DEFAULT_ACCOUNT_ID,
   LineConfigSchema,
   processLineMessage,
-  resolveRuntimeGroupPolicy,
+  resolveAllowlistProviderRuntimeGroupPolicy,
   type ChannelPlugin,
   type ChannelStatusIssue,
   type GroupPolicy,
@@ -163,15 +163,11 @@ export const linePlugin: ChannelPlugin<ResolvedLineAccount> = {
       };
     },
     collectWarnings: ({ account, cfg }) => {
-      const defaultGroupPolicy = cfg.channels?.defaults?.groupPolicy as
-        | GroupPolicy
-        | undefined;
-      const { groupPolicy } = resolveRuntimeGroupPolicy({
+      const defaultGroupPolicy = cfg.channels?.defaults?.groupPolicy;
+      const { groupPolicy } = resolveAllowlistProviderRuntimeGroupPolicy({
         providerConfigPresent: cfg.channels?.line !== undefined,
         groupPolicy: account.config.groupPolicy,
         defaultGroupPolicy,
-        configuredFallbackPolicy: "allowlist",
-        missingProviderFallbackPolicy: "allowlist",
       });
       if (groupPolicy !== "open") {
         return [];
